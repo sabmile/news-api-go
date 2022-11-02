@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
+	"html/template"
 	"log"
 	"net/http"
 	"net/url"
@@ -12,9 +14,22 @@ import (
 	"github.com/sabmile/news-api-go/news"
 )
 
+var tpl = template.Must(template.ParseFiles("index.html"))
+
+type Search struct {
+	Query   string
+	Results *news.Results
+}
+
 func indexHandler(w http.ResponseWriter, r *http.Request) {
-	s := "welcom"
-	w.Write([]byte(s))
+	buf := &bytes.Buffer{}
+	err := tpl.Execute(buf, nil)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	buf.WriteTo(w)
 }
 
 func searchHandler(newsapi *news.Client) http.HandlerFunc {
@@ -28,13 +43,27 @@ func searchHandler(newsapi *news.Client) http.HandlerFunc {
 		params := u.Query()
 		searchQuery := params.Get("q")
 
+		fmt.Println(params)
+
 		results, err := newsapi.FetchEverything(searchQuery)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		fmt.Printf("%+v", results)
+		search := &Search{
+			Query:   searchQuery,
+			Results: results,
+		}
+
+		buf := &bytes.Buffer{}
+		err = tpl.Execute(buf, search)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		buf.WriteTo(w)
 	}
 }
 
