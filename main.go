@@ -6,8 +6,10 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"time"
 
 	"github.com/joho/godotenv"
+	"github.com/sabmile/news-api-go/news"
 )
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {
@@ -15,17 +17,19 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(s))
 }
 
-func searchHandler(w http.ResponseWriter, r *http.Request) {
-	u, err := url.Parse(r.URL.String())
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+func searchHandler(newsapi *news.Client) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		u, err := url.Parse(r.URL.String())
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		params := u.Query()
+		searchQuery := params.Get("q")
+
+		fmt.Println(searchQuery)
 	}
-
-	params := u.Query()
-	searchQuery := params.Get("q")
-
-	fmt.Println(searchQuery)
 }
 
 func main() {
@@ -39,9 +43,17 @@ func main() {
 		port = "3000"
 	}
 
+	apiKey := os.Getenv("API_KEY")
+	if err != nil {
+		log.Fatal("Env: apiKey must be set")
+	}
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	newsapi := news.NewClient(client, apiKey)
+
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/", indexHandler)
-	mux.HandleFunc("/search", searchHandler)
+	mux.HandleFunc("/search", searchHandler(newsapi))
 	http.ListenAndServe(":"+port, mux)
 }
