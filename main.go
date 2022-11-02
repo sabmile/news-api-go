@@ -90,5 +90,6 @@ func main() {
 
 	mux.HandleFunc("/", indexHandler)
 	mux.HandleFunc("/search", searchHandler(newsapi))
+	mux.HandleFunc("/search/", searchHandler(newsapi))
 	http.ListenAndServe(":"+port, mux)
 }
