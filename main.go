@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"html/template"
 	"log"
+	"math"
 	"net/http"
 	"net/url"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/joho/godotenv"
@@ -17,8 +19,10 @@ import (
 var tpl = template.Must(template.ParseFiles("index.html"))
 
 type Search struct {
-	Query   string
-	Results *news.Results
+	Query      string
+	Results    *news.Results
+	NextPage   int
+	TotalPages int
 }
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {
@@ -42,18 +46,34 @@ func searchHandler(newsapi *news.Client) http.HandlerFunc {
 
 		params := u.Query()
 		searchQuery := params.Get("q")
+		page := params.Get("page")
+		if page == "" {
+			page = "1"
+		}
 
 		fmt.Println(params)
 
-		results, err := newsapi.FetchEverything(searchQuery)
+		results, err := newsapi.FetchEverything(searchQuery, page)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		nextPage, err := strconv.Atoi(page)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
 		search := &Search{
-			Query:   searchQuery,
-			Results: results,
+			Query:      searchQuery,
+			Results:    results,
+			NextPage:   nextPage,
+			TotalPages: int(math.Ceil(float64(results.TotalResults) / float64(newsapi.PageSize))),
+		}
+
+		if ok := !search.IsLastPage(); ok {
+			search.NextPage++
 		}
 
 		buf := &bytes.Buffer{}
@@ -65,6 +85,21 @@ func searchHandler(newsapi *news.Client) http.HandlerFunc {
 
 		buf.WriteTo(w)
 	}
+}
+
+func (s *Search) IsLastPage() bool {
+	return s.NextPage >= s.TotalPages
+}
+
+func (s *Search) CurrentPage() int {
+	if s.NextPage == 1 {
+		return s.NextPage
+	}
+	return s.NextPage - 1
+}
+
+func (s *Search) PreviousPage() int {
+	return s.CurrentPage() - 1
 }
 
 func main() {

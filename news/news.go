@@ -36,12 +36,17 @@ type Results struct {
 }
 
 func NewClient(httpClient *http.Client, apiKey string, pageSize int) *Client {
+	if pageSize > 100 {
+		pageSize = 100
+	}
 	return &Client{httpClient, apiKey, pageSize}
 }
 
-func (c *Client) FetchEverything(query string) (*Results, error) {
-	q := "https://newsapi.org/v2/everything?q=%s&apiKey=%s&pageSize=%d"
-	endPoint := fmt.Sprintf(q, url.QueryEscape(query), c.apiKey, c.PageSize)
+func (c *Client) FetchEverything(query, page string) (*Results, error) {
+	// q := "https://newsapi.org/v2/everything?q=%s&apiKey=%s&pageSize=%d&page%s"
+	// endPoint := fmt.Sprintf(q, url.QueryEscape(query), c.apiKey, c.PageSize, page)
+	q := "https://newsapi.org/v2/everything?q=%s&pageSize=%d&page=%s&apiKey=%s&sortBy=publishedAt&language=en"
+	endPoint := fmt.Sprintf(q, url.QueryEscape(query), c.PageSize, page, c.apiKey)
 	resp, err := c.http.Get(endPoint)
 	if err != nil {
 		return nil, err
