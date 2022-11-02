@@ -20,6 +20,16 @@
             <a href="https://github.com/sabmile/news-api-go" class="button github-button">View on GitHub</a>
         </header>
         <section class="container">
+            <div class="result-count">
+                {{ if .Results }}
+                {{ if (gt .Results.TotalResults 0)}}
+                <p>About <strong>{{ .Results.TotalResults }}</strong> results were found. You are on page <strong>{{
+                        .CurrentPage }}</strong> of <strong> {{ .TotalPages }}</strong>.</p>
+                {{ else if (ne .Query "") and (eq .Results.TotalResults 0) }}
+                <p>No results found for your query: <strong>{{ .Query }}</strong>.</p>
+                {{ end }}
+                {{ end }}
+            </div>
             <ul class="search-results">
                 {{ range.Results.Articles }}
                 <li class="news-article">
