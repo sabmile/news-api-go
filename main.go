@@ -83,8 +83,10 @@ func main() {
 		log.Fatal("Env: apiKey must be set")
 	}
 
+	pageSize := 5
+
 	client := &http.Client{Timeout: 10 * time.Second}
-	newsapi := news.NewClient(client, apiKey)
+	newsapi := news.NewClient(client, apiKey, pageSize)
 
 	mux := http.NewServeMux()
 

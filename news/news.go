@@ -10,8 +10,9 @@ import (
 )
 
 type Client struct {
-	http   *http.Client
-	apiKey string
+	http     *http.Client
+	apiKey   string
+	PageSize int
 }
 
 type Article struct {
@@ -34,13 +35,13 @@ type Results struct {
 	Articles     []Article `json:"articles"`
 }
 
-func NewClient(httpClient *http.Client, apiKey string) *Client {
-	return &Client{httpClient, apiKey}
+func NewClient(httpClient *http.Client, apiKey string, pageSize int) *Client {
+	return &Client{httpClient, apiKey, pageSize}
 }
 
 func (c *Client) FetchEverything(query string) (*Results, error) {
-	q := "https://newsapi.org/v2/everything?q=%s&apiKey=%s"
-	endPoint := fmt.Sprintf(q, url.QueryEscape(query), c.apiKey)
+	q := "https://newsapi.org/v2/everything?q=%s&apiKey=%s&pageSize=%d"
+	endPoint := fmt.Sprintf(q, url.QueryEscape(query), c.apiKey, c.PageSize)
 	resp, err := c.http.Get(endPoint)
 	if err != nil {
 		return nil, err
